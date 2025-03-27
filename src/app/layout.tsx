@@ -7,6 +7,10 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "アイスブレイクお題作成ツール",
   description: "会社のアイスブレイクに最適なお題を生成するツール",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({
