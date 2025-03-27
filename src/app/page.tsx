@@ -22,7 +22,12 @@ import {
   TabsContent,
   Input,
 } from "@/components/ui/";
-import { RefreshCw, CheckCircle } from "lucide-react";
+import {
+  RefreshCw,
+  CheckCircle,
+  MessageCircleMore,
+  MessageCircleOff,
+} from "lucide-react";
 import { fetchCompletedTopics, unCompleteTopic } from "@/lib/complete-topics";
 import { saveCompletedTopicAction } from "@/actions/save-completed-topic";
 import { CompletedTopic, IndustryValue } from "@/types";
@@ -132,10 +137,12 @@ export default function Home() {
 
   return (
     <main className="py-10 px-4 max-w-xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-center">アイスブレイクお題生成</h1>
+      <h1 className="text-2xl font-bold text-center">
+        アイスブレイク提案ツール
+      </h1>
       <Tabs defaultValue="generate" className="w-full">
         <TabsList className="w-full mb-2">
-          <TabsTrigger value="generate">お題を生成</TabsTrigger>
+          <TabsTrigger value="generate">お題をつくる</TabsTrigger>
           <TabsTrigger value="completed">完了したお題</TabsTrigger>
         </TabsList>
         <TabsContent value="generate">
@@ -143,7 +150,7 @@ export default function Home() {
             <Card>
               <CardContent>
                 <div className="space-y-2">
-                  <Label htmlFor="industry">会社の業態</Label>
+                  <Label htmlFor="industry">どんな仕事をしている会社？</Label>
                   <Select
                     value={isCustom ? "other" : industry}
                     onValueChange={(value) => {
@@ -157,7 +164,7 @@ export default function Home() {
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="業態を選択してください" />
+                      <SelectValue placeholder="業界を選んでください" />
                     </SelectTrigger>
                     <SelectContent>
                       {INDUSTRY_PRESETS.map((preset) => (
@@ -185,11 +192,11 @@ export default function Home() {
                       setIncludeCasual(checked as boolean)
                     }
                   />
-                  <Label htmlFor="includeCasual">日常雑談のお題を混ぜる</Label>
+                  <Label htmlFor="includeCasual">日常の話題もまぜる</Label>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="count">出題数</Label>
+                  <Label htmlFor="count">お題の数</Label>
                   <Select
                     value={count.toString()}
                     onValueChange={(value) => setCount(parseInt(value))}
@@ -219,7 +226,7 @@ export default function Home() {
                     }
                   />
                   <Label htmlFor="excludeCompleted" className="cursor-pointer">
-                    完了済みお題を除外する
+                    完了したお題はスキップ
                   </Label>
                 </div>
 
@@ -231,26 +238,92 @@ export default function Home() {
                   <RefreshCw
                     className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
                   />
-                  お題を生成
+                  お題をつくる
                 </Button>
               </CardContent>
             </Card>
-
-            {topics.length > 0 && (
-              <div className="space-y-8">
-                <Heading>生成されたお題</Heading>
-
-                {topics.map((topic, index) => (
-                  <AnimatePresence key={index}>
-                    <Card className="overflow-hidden gap-y-4 pt-6">
+            <div className="space-y-8">
+              <Heading>こんなお題はいかが？</Heading>
+              {topics.length > 0 ? (
+                <>
+                  {topics.map((topic, index) => (
+                    <AnimatePresence key={index}>
+                      <motion.div
+                        animate={
+                          doneMap[topic]
+                            ? {
+                                display: "none",
+                                transition: { delay: 0.5 },
+                              }
+                            : {}
+                        }
+                      >
+                        <Card className="overflow-hidden gap-y-4 pt-6">
+                          <CardContent>
+                            <p className="text-base">{topic}</p>
+                          </CardContent>
+                          <CardFooter className="flex justify-end">
+                            <motion.div
+                              whileTap={{ scale: 0.95 }}
+                              animate={
+                                doneMap[topic]
+                                  ? {
+                                      scale: [1, 1.1, 1],
+                                      transition: { duration: 0.3 },
+                                    }
+                                  : {}
+                              }
+                            >
+                              <Button
+                                onClick={() => handleClick(topic)}
+                                variant="outline"
+                                size="sm"
+                                className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                完了
+                              </Button>
+                            </motion.div>
+                          </CardFooter>
+                        </Card>
+                      </motion.div>
+                    </AnimatePresence>
+                  ))}
+                </>
+              ) : (
+                <p className="text-center">
+                  <MessageCircleMore className="h-5 w-5 mx-auto mb-2" />
+                  ここにお題が表示されます
+                </p>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+        <TabsContent value="completed">
+          {completedTopics.length > 0 ? (
+            <div className="pt-6 space-y-8">
+              <Heading>これまでのお題一覧</Heading>
+              {completedTopics.map((topic, index) => (
+                <AnimatePresence key={index}>
+                  <motion.div
+                    animate={
+                      doneMap[topic.id]
+                        ? {
+                            display: "none",
+                            transition: { delay: 0.5 },
+                          }
+                        : {}
+                    }
+                  >
+                    <Card key={index} className="overflow-hidden gap-y-4 pt-6">
                       <CardContent>
-                        <p className="text-base">{topic}</p>
+                        <p className="text-base">{topic.topic}</p>
                       </CardContent>
                       <CardFooter className="flex justify-end">
                         <motion.div
                           whileTap={{ scale: 0.95 }}
                           animate={
-                            doneMap[topic]
+                            doneMap[topic.id]
                               ? {
                                   scale: [1, 1.1, 1],
                                   transition: { duration: 0.3 },
@@ -259,63 +332,27 @@ export default function Home() {
                           }
                         >
                           <Button
-                            onClick={() => handleClick(topic)}
+                            onClick={() => handleUnComplete(topic.id)}
                             variant="outline"
                             size="sm"
                             className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer"
                           >
                             <CheckCircle className="h-4 w-4" />
-                            完了
+                            未完了に戻す
                           </Button>
                         </motion.div>
                       </CardFooter>
                     </Card>
-                  </AnimatePresence>
-                ))}
-              </div>
-            )}
-          </div>
-        </TabsContent>
-        <TabsContent value="completed">
-          {completedTopics.length > 0 ? (
-            <div className="pt-6 space-y-8">
-              <Heading>完了したお題</Heading>
-              {completedTopics.map((topic, index) => (
-                <AnimatePresence key={index}>
-                  <Card key={index} className="overflow-hidden gap-y-4 pt-6">
-                    <CardContent>
-                      <p className="text-base">{topic.topic}</p>
-                    </CardContent>
-                    <CardFooter className="flex justify-end">
-                      <motion.div
-                        whileTap={{ scale: 0.95 }}
-                        animate={
-                          doneMap[topic.id]
-                            ? {
-                                scale: [1, 1.1, 1],
-                                transition: { duration: 0.3 },
-                              }
-                            : {}
-                        }
-                      >
-                        <Button
-                          onClick={() => handleUnComplete(topic.id)}
-                          variant="outline"
-                          size="sm"
-                          className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          未完了に戻す
-                        </Button>
-                      </motion.div>
-                    </CardFooter>
-                  </Card>
+                  </motion.div>
                 </AnimatePresence>
               ))}
             </div>
           ) : (
-            <div className="pt-6 space-y-8">
-              <p className="text-center">完了したお題はまだありません</p>
+            <div className="pt-10 space-y-8">
+              <p className="text-center">
+                <MessageCircleOff className="h-5 w-5 mx-auto mb-2" />
+                完了したお題はまだありません
+              </p>
             </div>
           )}
         </TabsContent>
