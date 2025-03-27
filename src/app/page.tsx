@@ -23,10 +23,7 @@ import {
   Input,
 } from "@/components/ui/";
 import { RefreshCw, CheckCircle } from "lucide-react";
-import {
-  fetchCompletedTopics,
-  deleteCompletedTopic,
-} from "@/lib/complete-topics";
+import { fetchCompletedTopics, unCompleteTopic } from "@/lib/complete-topics";
 import { saveCompletedTopicAction } from "@/actions/save-completed-topic";
 import { CompletedTopic, IndustryValue } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -105,20 +102,20 @@ export default function Home() {
     setDoneMap((prev) => ({ ...prev, [topic]: true }));
 
     const now = new Date().toISOString();
-    await saveCompletedTopicAction(topic, now);
+    const saved = await saveCompletedTopicAction(topic, now);
+
+    if (saved) {
+      setCompletedTopics((prev) => [saved, ...prev]);
+    }
 
     setTopics((prev) => prev.filter((t) => t !== topic));
-    setCompletedTopics((prev) => [
-      { id: topic, topic: topic, completedAt: now },
-      ...prev,
-    ]);
     setPreviousTopics((prev) => prev.filter((t) => t !== topic));
 
     setDoneMap((prev) => ({ ...prev, [topic]: false }));
   };
 
   const handleUnComplete = async (id: string) => {
-    await deleteCompletedTopic(id);
+    await unCompleteTopic(id);
     setCompletedTopics((prev) => prev.filter((t) => t.id !== id));
   };
 
