@@ -6,5 +6,5 @@ export async function saveCompletedTopicAction(
   text: string,
   completedAt: string,
 ) {
-  await saveCompletedTopic(text, completedAt);
+  return await saveCompletedTopic(text, completedAt);
 }

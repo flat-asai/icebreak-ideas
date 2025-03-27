@@ -31,9 +31,9 @@ export async function saveCompletedTopic(topic: string, completedAt: string) {
 }
 
 /*
- * 完了したお題を削除（アーカイブ）
+ * 完了したお題を未完了に戻す
  */
-export async function deleteCompletedTopic(id: string) {
+export async function unCompleteTopic(id: string) {
   try {
     await notion.pages.update({
       page_id: id,
