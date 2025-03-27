@@ -1,103 +1,328 @@
-import Image from "next/image";
+// src/app/page.tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { generateTopics } from "@/lib/generate-topics";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  Checkbox,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Label,
+  Heading,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  Input,
+} from "@/components/ui/";
+import { RefreshCw, CheckCircle } from "lucide-react";
+import {
+  fetchCompletedTopics,
+  deleteCompletedTopic,
+} from "@/lib/complete-topics";
+import { saveCompletedTopicAction } from "@/actions/save-completed-topic";
+import { CompletedTopic, IndustryValue } from "@/types";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const INDUSTRY_PRESETS = [
+    { value: "web", label: "Web・IT系" },
+    { value: "food", label: "飲食・カフェ系" },
+    { value: "education", label: "教育・塾系" },
+    { value: "medical", label: "医療・クリニック系" },
+    { value: "legal", label: "法律・司法書士系" },
+    { value: "other", label: "その他（自由入力）" },
+  ];
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  const INDUSTRY_MAP: Record<IndustryValue, string> = {
+    web: "Webサイト制作、フロントエンド開発、Webアプリ開発",
+    food: "飲食店、カフェ、テイクアウトサービス",
+    education: "学校、オンライン学習、塾・予備校",
+    medical: "病院、クリニック、ヘルスケアサービス",
+    legal: "法律事務所、司法書士事務所、行政書士事務所",
+  };
+
+  const COUNT_PRESETS = [
+    { value: 1, label: "1つ" },
+    { value: 2, label: "2つ" },
+    { value: 3, label: "3つ" },
+    { value: 4, label: "4つ" },
+    { value: 5, label: "5つ" },
+  ];
+
+  /* 業態 */
+  const [industry, setIndustry] = useState(INDUSTRY_PRESETS[0].value);
+  const [isCustom, setIsCustom] = useState(false);
+
+  /* お題の生成 */
+  const [includeCasual, setIncludeCasual] = useState(false);
+  const [count, setCount] = useState(1);
+  const [topics, setTopics] = useState<string[]>([]);
+
+  /* 完了 */
+  const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
+
+  const [excludeCompleted, setExcludeCompleted] = useState(false);
+  const [completedTopics, setCompletedTopics] = useState<CompletedTopic[]>([]);
+
+  /* 前回のお題 */
+  const [previousTopics, setPreviousTopics] = useState<string[]>([]);
+
+  /* ローディング */
+  const [loading, setLoading] = useState(false);
+
+  const handleGenerate = async () => {
+    setLoading(true);
+
+    let excludedTopics: CompletedTopic[] = [];
+
+    if (excludeCompleted) {
+      excludedTopics = await fetchCompletedTopics();
+    }
+
+    const result = await generateTopics({
+      industry: selectedIndustry,
+      includeCasual,
+      count: count,
+      excludedTopics: excludedTopics,
+      previousTopics: previousTopics,
+    });
+
+    setTopics(result);
+    setPreviousTopics((prev) => [...prev, ...result]);
+
+    setLoading(false);
+  };
+
+  const handleClick = async (topic: string) => {
+    setDoneMap((prev) => ({ ...prev, [topic]: true }));
+
+    const now = new Date().toISOString();
+    await saveCompletedTopicAction(topic, now);
+
+    setTopics((prev) => prev.filter((t) => t !== topic));
+    setCompletedTopics((prev) => [
+      { id: topic, topic: topic, completedAt: now },
+      ...prev,
+    ]);
+    setPreviousTopics((prev) => prev.filter((t) => t !== topic));
+
+    setDoneMap((prev) => ({ ...prev, [topic]: false }));
+  };
+
+  const handleUnComplete = async (id: string) => {
+    await deleteCompletedTopic(id);
+    setCompletedTopics((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const topics = await fetchCompletedTopics();
+      setCompletedTopics(topics);
+    };
+
+    fetchData();
+  }, []);
+
+  const selectedIndustry = INDUSTRY_MAP[industry] || industry;
+
+  return (
+    <main className="py-10 px-4 max-w-xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold text-center">アイスブレイクお題生成</h1>
+      <Tabs defaultValue="generate" className="w-full">
+        <TabsList className="w-full mb-2">
+          <TabsTrigger value="generate">お題を生成</TabsTrigger>
+          <TabsTrigger value="completed">完了したお題</TabsTrigger>
+        </TabsList>
+        <TabsContent value="generate">
+          <div className="space-y-10">
+            <Card>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="industry">会社の業態</Label>
+                  <Select
+                    value={isCustom ? "other" : industry}
+                    onValueChange={(value) => {
+                      if (value === "other") {
+                        setIsCustom(true);
+                        setIndustry("");
+                      } else {
+                        setIsCustom(false);
+                        setIndustry(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="業態を選択してください" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDUSTRY_PRESETS.map((preset) => (
+                        <SelectItem key={preset.value} value={preset.value}>
+                          {preset.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {isCustom && (
+                    <Input
+                      placeholder="例：Web制作・デザイン事業 など"
+                      value={industry}
+                      onChange={(e) => setIndustry(e.target.value)}
+                    />
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="includeCasual"
+                    checked={includeCasual}
+                    onCheckedChange={(checked) =>
+                      setIncludeCasual(checked as boolean)
+                    }
+                  />
+                  <Label htmlFor="includeCasual">日常雑談のお題を混ぜる</Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="count">出題数</Label>
+                  <Select
+                    value={count.toString()}
+                    onValueChange={(value) => setCount(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="お題の数を選択してください" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNT_PRESETS.map((preset) => (
+                        <SelectItem
+                          key={preset.value}
+                          value={preset.value.toString()}
+                        >
+                          {preset.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="excludeCompleted"
+                    checked={excludeCompleted}
+                    onCheckedChange={(checked) =>
+                      setExcludeCompleted(!!checked)
+                    }
+                  />
+                  <Label htmlFor="excludeCompleted" className="cursor-pointer">
+                    完了済みお題を除外する
+                  </Label>
+                </div>
+
+                <Button
+                  onClick={() => handleGenerate()}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  <RefreshCw
+                    className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
+                  />
+                  お題を生成
+                </Button>
+              </CardContent>
+            </Card>
+
+            {topics.length > 0 && (
+              <div className="space-y-8">
+                <Heading>生成されたお題</Heading>
+
+                {topics.map((topic, index) => (
+                  <AnimatePresence key={index}>
+                    <Card className="overflow-hidden gap-y-4 pt-6">
+                      <CardContent>
+                        <p className="text-base">{topic}</p>
+                      </CardContent>
+                      <CardFooter className="flex justify-end">
+                        <motion.div
+                          whileTap={{ scale: 0.95 }}
+                          animate={
+                            doneMap[topic]
+                              ? {
+                                  scale: [1, 1.1, 1],
+                                  transition: { duration: 0.3 },
+                                }
+                              : {}
+                          }
+                        >
+                          <Button
+                            onClick={() => handleClick(topic)}
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            完了
+                          </Button>
+                        </motion.div>
+                      </CardFooter>
+                    </Card>
+                  </AnimatePresence>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        <TabsContent value="completed">
+          {completedTopics.length > 0 ? (
+            <div className="pt-6 space-y-8">
+              <Heading>完了したお題</Heading>
+              {completedTopics.map((topic, index) => (
+                <AnimatePresence key={index}>
+                  <Card key={index} className="overflow-hidden gap-y-4 pt-6">
+                    <CardContent>
+                      <p className="text-base">{topic.topic}</p>
+                    </CardContent>
+                    <CardFooter className="flex justify-end">
+                      <motion.div
+                        whileTap={{ scale: 0.95 }}
+                        animate={
+                          doneMap[topic.id]
+                            ? {
+                                scale: [1, 1.1, 1],
+                                transition: { duration: 0.3 },
+                              }
+                            : {}
+                        }
+                      >
+                        <Button
+                          onClick={() => handleUnComplete(topic.id)}
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          未完了に戻す
+                        </Button>
+                      </motion.div>
+                    </CardFooter>
+                  </Card>
+                </AnimatePresence>
+              ))}
+            </div>
+          ) : (
+            <div className="pt-6 space-y-8">
+              <p className="text-center">完了したお題はまだありません</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </main>
   );
 }
