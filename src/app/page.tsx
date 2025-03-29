@@ -9,10 +9,6 @@ import {
   CardContent,
   CardFooter,
   Checkbox,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -36,6 +32,7 @@ import { fetchCompletedTopics, unCompleteTopic } from "@/lib/complete-topics";
 import { saveCompletedTopicAction } from "@/actions/save-completed-topic";
 import { CompletedTopic, IndustryValue } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
+import { AnimatedTopicCard } from "@/app/_feature/topic-generator";
 
 export default function Home() {
   const INDUSTRY_PRESETS = [
@@ -259,64 +256,14 @@ export default function Home() {
                 {topics.length > 0 ? (
                   <>
                     {topics.map((topic, index) => (
-                      <AnimatePresence key={index}>
-                        <motion.div
-                          animate={
-                            doneMap[topic]
-                              ? {
-                                  display: "none",
-                                }
-                              : {}
-                          }
-                        >
-                          <Card className="overflow-hidden gap-y-4 pt-6">
-                            <CardContent>
-                              <p className="text-base">{topic}</p>
-                            </CardContent>
-                            <CardFooter className="flex justify-end">
-                              <Dialog
-                                open={openDialog === topic}
-                                onOpenChange={(open) =>
-                                  setOpenDialog(open ? topic : null)
-                                }
-                              >
-                                <DialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer transition-transform active:scale-95"
-                                  >
-                                    これにする
-                                    <MessageCircleMore className="h-4 w-4 ml-1" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogTitle className="leading-relaxed text-center">
-                                    <MessageCircleMore className="h-5 w-5 mx-auto mb-2" />
-                                    今回のお題
-                                  </DialogTitle>
-                                  <div>
-                                    <div className="flex justify-center flex-col items-center">
-                                      {topic}
-                                    </div>
-                                    <div className="text-right mt-6">
-                                      <Button
-                                        onClick={() => handleComplete(topic)}
-                                        variant="default"
-                                        size="sm"
-                                        className="bg-green-600 border-1 border-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-600 transition-transform active:scale-95"
-                                      >
-                                        <CheckCircle className="h-4 w-4" />
-                                        完了
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                            </CardFooter>
-                          </Card>
-                        </motion.div>
-                      </AnimatePresence>
+                      <AnimatedTopicCard
+                        key={index}
+                        topic={topic}
+                        doneMap={doneMap}
+                        openDialog={openDialog}
+                        setOpenDialog={setOpenDialog}
+                        handleComplete={handleComplete}
+                      />
                     ))}
                   </>
                 ) : (
