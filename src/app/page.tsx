@@ -8,31 +8,21 @@ import {
   Card,
   CardContent,
   CardFooter,
-  Checkbox,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Label,
   Heading,
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
-  Input,
 } from "@/components/ui/";
-import {
-  RefreshCw,
-  CheckCircle,
-  MessageCircleMore,
-  MessageCircleOff,
-} from "lucide-react";
+import { CheckCircle, MessageCircleMore, MessageCircleOff } from "lucide-react";
 import { fetchCompletedTopics, unCompleteTopic } from "@/lib/complete-topics";
 import { saveCompletedTopicAction } from "@/actions/save-completed-topic";
 import { CompletedTopic, IndustryValue } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { AnimatedTopicCard } from "@/app/_feature/topic-generator";
+import {
+  AnimatedTopicCard,
+  TopicGenerator,
+} from "@/app/_feature/topic-generator";
 
 export default function Home() {
   const INDUSTRY_PRESETS = [
@@ -153,104 +143,22 @@ export default function Home() {
           </TabsList>
           <TabsContent value="generate">
             <div className="space-y-10">
-              <Card>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Label htmlFor="industry">どんな仕事をしている会社？</Label>
-                    <Select
-                      value={isCustom ? "other" : industry}
-                      onValueChange={(value) => {
-                        if (value === "other") {
-                          setIsCustom(true);
-                          setIndustry("");
-                        } else {
-                          setIsCustom(false);
-                          setIndustry(value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="業界を選んでください" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {INDUSTRY_PRESETS.map((preset) => (
-                          <SelectItem key={preset.value} value={preset.value}>
-                            {preset.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    {isCustom && (
-                      <Input
-                        placeholder="例：Web制作・デザイン事業 など"
-                        value={industry}
-                        onChange={(e) => setIndustry(e.target.value)}
-                      />
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="includeCasual"
-                      checked={includeCasual}
-                      onCheckedChange={(checked) =>
-                        setIncludeCasual(checked as boolean)
-                      }
-                    />
-                    <Label htmlFor="includeCasual">日常の話題もまぜる</Label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="count">お題の数</Label>
-                    <Select
-                      value={count.toString()}
-                      onValueChange={(value) => setCount(parseInt(value))}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="お題の数を選択してください" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {COUNT_PRESETS.map((preset) => (
-                          <SelectItem
-                            key={preset.value}
-                            value={preset.value.toString()}
-                          >
-                            {preset.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="excludeCompleted"
-                      checked={excludeCompleted}
-                      onCheckedChange={(checked) =>
-                        setExcludeCompleted(!!checked)
-                      }
-                    />
-                    <Label
-                      htmlFor="excludeCompleted"
-                      className="cursor-pointer"
-                    >
-                      完了したお題はスキップ
-                    </Label>
-                  </div>
-
-                  <Button
-                    onClick={() => handleGenerate()}
-                    disabled={loading}
-                    className="w-full"
-                  >
-                    <RefreshCw
-                      className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
-                    />
-                    お題をつくる
-                  </Button>
-                </CardContent>
-              </Card>
+              <TopicGenerator
+                industry={industry}
+                setIndustry={setIndustry}
+                isCustom={isCustom}
+                setIsCustom={setIsCustom}
+                includeCasual={includeCasual}
+                setIncludeCasual={setIncludeCasual}
+                count={count}
+                setCount={setCount}
+                excludeCompleted={excludeCompleted}
+                setExcludeCompleted={setExcludeCompleted}
+                handleGenerate={handleGenerate}
+                loading={loading}
+                INDUSTRY_PRESETS={INDUSTRY_PRESETS}
+                COUNT_PRESETS={COUNT_PRESETS}
+              />
               <div className="space-y-8">
                 <Heading>こんなお題はいかが？</Heading>
                 {topics.length > 0 ? (
