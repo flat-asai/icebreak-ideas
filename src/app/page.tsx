@@ -57,7 +57,7 @@ export default function Home() {
   const [excludeCompleted, setExcludeCompleted] = useState(false);
 
   /* お題 */
-  const [topics, setTopics] = useState<string[]>([]);
+  const [topics, setTopics] = useState<{ text: string; id: string }[]>([]);
   const [completedTopics, setCompletedTopics] = useState<CompletedTopic[]>([]);
 
   /* 完了 */
@@ -90,7 +90,10 @@ export default function Home() {
     });
 
     setTopics(result);
-    setPreviousTopics((prev) => [...prev, ...result]);
+    setPreviousTopics((prev) => [
+      ...prev,
+      ...result.map((topic) => topic.text),
+    ]);
 
     setLoading(false);
   };
@@ -106,7 +109,7 @@ export default function Home() {
       setCompletedTopics((prev) => [saved, ...prev]);
     }
 
-    setTopics((prev) => prev.filter((t) => t !== topic));
+    setTopics((prev) => prev.filter((t) => t.text !== topic));
     setPreviousTopics((prev) => prev.filter((t) => t !== topic));
 
     setDoneMap((prev) => ({ ...prev, [topic]: false }));
@@ -167,11 +170,11 @@ export default function Home() {
                 <Heading>こんなお題はいかが？</Heading>
                 {topics.length > 0 ? (
                   <>
-                    {topics.map((topic, index) => (
+                    {topics.map((topic) => (
                       <AnimatedTopicCard
-                        key={index}
+                        key={topic.id}
                         topicState={{
-                          topic,
+                          topic: topic.text,
                           doneMap,
                         }}
                         dialogState={{
@@ -198,9 +201,9 @@ export default function Home() {
                 {completedTopics.map((topic, index) => (
                   <AnimatedCompletedTopics
                     key={index}
-                    topic={topic}
+                    topic={topic.topic}
                     doneMap={doneMap}
-                    handleUnComplete={handleUnComplete}
+                    handleUnComplete={() => handleUnComplete(topic.id)}
                   />
                 ))}
               </div>

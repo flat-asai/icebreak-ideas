@@ -21,7 +21,7 @@ export async function generateTopics({
   count,
   previousTopics,
   excludedTopics,
-}: GenerateTopicsProps): Promise<string[]> {
+}: GenerateTopicsProps): Promise<{ text: string; id: string }[]> {
   /*
    * お題のプロンプト
    */
@@ -77,7 +77,8 @@ ${
     .split("\n") // 改行で分割（1行1お題）
     .map((line) => line.trim()) // 空白削除
     .filter((line) => line.length > 0) // 空行は除外
-    .slice(0, count); // 念のため count 件に絞る
+    .slice(0, count) // 念のため count 件に絞る
+    .map((topic) => ({ text: topic, id: crypto.randomUUID() })); // お題に対して、ランダムなIDを付与
 
   console.log(prompt);
   return topics;
