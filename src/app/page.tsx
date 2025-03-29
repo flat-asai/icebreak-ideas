@@ -4,38 +4,22 @@
 import { useState, useEffect } from "react";
 import { generateTopics } from "@/lib/generate-topics";
 import {
-  Button,
-  Card,
-  CardContent,
-  CardFooter,
-  Checkbox,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Label,
   Heading,
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
-  Input,
 } from "@/components/ui/";
-import {
-  RefreshCw,
-  CheckCircle,
-  MessageCircleMore,
-  MessageCircleOff,
-} from "lucide-react";
+import { MessageCircleMore, MessageCircleOff } from "lucide-react";
 import { fetchCompletedTopics, unCompleteTopic } from "@/lib/complete-topics";
 import { saveCompletedTopicAction } from "@/actions/save-completed-topic";
 import { CompletedTopic, IndustryValue } from "@/types";
-import { motion, AnimatePresence } from "framer-motion";
+
+import {
+  AnimatedTopicCard,
+  TopicGenerator,
+} from "@/app/_feature/topic-generator";
+import { AnimatedCompletedTopics } from "@/app/_feature/completed-topics";
 
 export default function Home() {
   const INDUSTRY_PRESETS = [
@@ -63,20 +47,21 @@ export default function Home() {
     { value: 5, label: "5つ" },
   ];
 
-  /* 業態 */
+  /* generatorForm: 入力するフォーム */
   const [industry, setIndustry] = useState(INDUSTRY_PRESETS[0].value);
   const [isCustom, setIsCustom] = useState(false);
-
-  /* お題の生成 */
   const [includeCasual, setIncludeCasual] = useState(false);
   const [count, setCount] = useState(1);
-  const [topics, setTopics] = useState<string[]>([]);
+
+  /* optionsState: トピックスの出力条件 */
+  const [excludeCompleted, setExcludeCompleted] = useState(false);
+
+  /* お題 */
+  const [topics, setTopics] = useState<{ text: string; id: string }[]>([]);
+  const [completedTopics, setCompletedTopics] = useState<CompletedTopic[]>([]);
 
   /* 完了 */
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
-
-  const [excludeCompleted, setExcludeCompleted] = useState(false);
-  const [completedTopics, setCompletedTopics] = useState<CompletedTopic[]>([]);
 
   /* 前回のお題 */
   const [previousTopics, setPreviousTopics] = useState<string[]>([]);
@@ -105,7 +90,10 @@ export default function Home() {
     });
 
     setTopics(result);
-    setPreviousTopics((prev) => [...prev, ...result]);
+    setPreviousTopics((prev) => [
+      ...prev,
+      ...result.map((topic) => topic.text),
+    ]);
 
     setLoading(false);
   };
@@ -121,7 +109,7 @@ export default function Home() {
       setCompletedTopics((prev) => [saved, ...prev]);
     }
 
-    setTopics((prev) => prev.filter((t) => t !== topic));
+    setTopics((prev) => prev.filter((t) => t.text !== topic));
     setPreviousTopics((prev) => prev.filter((t) => t !== topic));
 
     setDoneMap((prev) => ({ ...prev, [topic]: false }));
@@ -156,167 +144,45 @@ export default function Home() {
           </TabsList>
           <TabsContent value="generate">
             <div className="space-y-10">
-              <Card>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Label htmlFor="industry">どんな仕事をしている会社？</Label>
-                    <Select
-                      value={isCustom ? "other" : industry}
-                      onValueChange={(value) => {
-                        if (value === "other") {
-                          setIsCustom(true);
-                          setIndustry("");
-                        } else {
-                          setIsCustom(false);
-                          setIndustry(value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="業界を選んでください" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {INDUSTRY_PRESETS.map((preset) => (
-                          <SelectItem key={preset.value} value={preset.value}>
-                            {preset.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    {isCustom && (
-                      <Input
-                        placeholder="例：Web制作・デザイン事業 など"
-                        value={industry}
-                        onChange={(e) => setIndustry(e.target.value)}
-                      />
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="includeCasual"
-                      checked={includeCasual}
-                      onCheckedChange={(checked) =>
-                        setIncludeCasual(checked as boolean)
-                      }
-                    />
-                    <Label htmlFor="includeCasual">日常の話題もまぜる</Label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="count">お題の数</Label>
-                    <Select
-                      value={count.toString()}
-                      onValueChange={(value) => setCount(parseInt(value))}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="お題の数を選択してください" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {COUNT_PRESETS.map((preset) => (
-                          <SelectItem
-                            key={preset.value}
-                            value={preset.value.toString()}
-                          >
-                            {preset.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="excludeCompleted"
-                      checked={excludeCompleted}
-                      onCheckedChange={(checked) =>
-                        setExcludeCompleted(!!checked)
-                      }
-                    />
-                    <Label
-                      htmlFor="excludeCompleted"
-                      className="cursor-pointer"
-                    >
-                      完了したお題はスキップ
-                    </Label>
-                  </div>
-
-                  <Button
-                    onClick={() => handleGenerate()}
-                    disabled={loading}
-                    className="w-full"
-                  >
-                    <RefreshCw
-                      className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
-                    />
-                    お題をつくる
-                  </Button>
-                </CardContent>
-              </Card>
+              <TopicGenerator
+                generatorForm={{
+                  industry,
+                  setIndustry,
+                  isCustom,
+                  setIsCustom,
+                  includeCasual,
+                  setIncludeCasual,
+                  count,
+                  setCount,
+                }}
+                optionsState={{
+                  excludeCompleted,
+                  setExcludeCompleted,
+                }}
+                handleGenerate={handleGenerate}
+                loading={loading}
+                constants={{
+                  INDUSTRY_PRESETS,
+                  COUNT_PRESETS,
+                }}
+              />
               <div className="space-y-8">
                 <Heading>こんなお題はいかが？</Heading>
                 {topics.length > 0 ? (
                   <>
-                    {topics.map((topic, index) => (
-                      <AnimatePresence key={index}>
-                        <motion.div
-                          animate={
-                            doneMap[topic]
-                              ? {
-                                  display: "none",
-                                }
-                              : {}
-                          }
-                        >
-                          <Card className="overflow-hidden gap-y-4 pt-6">
-                            <CardContent>
-                              <p className="text-base">{topic}</p>
-                            </CardContent>
-                            <CardFooter className="flex justify-end">
-                              <Dialog
-                                open={openDialog === topic}
-                                onOpenChange={(open) =>
-                                  setOpenDialog(open ? topic : null)
-                                }
-                              >
-                                <DialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer transition-transform active:scale-95"
-                                  >
-                                    これにする
-                                    <MessageCircleMore className="h-4 w-4 ml-1" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogTitle className="leading-relaxed text-center">
-                                    <MessageCircleMore className="h-5 w-5 mx-auto mb-2" />
-                                    今回のお題
-                                  </DialogTitle>
-                                  <div>
-                                    <div className="flex justify-center flex-col items-center">
-                                      {topic}
-                                    </div>
-                                    <div className="text-right mt-6">
-                                      <Button
-                                        onClick={() => handleComplete(topic)}
-                                        variant="default"
-                                        size="sm"
-                                        className="bg-green-600 border-1 border-green-600 hover:bg-green-50 hover:text-green-700 hover:border-green-600 transition-transform active:scale-95"
-                                      >
-                                        <CheckCircle className="h-4 w-4" />
-                                        完了
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                            </CardFooter>
-                          </Card>
-                        </motion.div>
-                      </AnimatePresence>
+                    {topics.map((topic) => (
+                      <AnimatedTopicCard
+                        key={topic.id}
+                        topicState={{
+                          topic: topic.text,
+                          doneMap,
+                        }}
+                        dialogState={{
+                          openDialog,
+                          setOpenDialog,
+                        }}
+                        handleComplete={handleComplete}
+                      />
                     ))}
                   </>
                 ) : (
@@ -333,50 +199,12 @@ export default function Home() {
               <div className="pt-6 space-y-8">
                 <Heading>これまでのお題一覧</Heading>
                 {completedTopics.map((topic, index) => (
-                  <AnimatePresence key={index}>
-                    <motion.div
-                      animate={
-                        doneMap[topic.id]
-                          ? {
-                              display: "none",
-                              transition: { delay: 0.5 },
-                            }
-                          : {}
-                      }
-                    >
-                      <Card
-                        key={index}
-                        className="overflow-hidden gap-y-4 pt-6"
-                      >
-                        <CardContent>
-                          <p className="text-base">{topic.topic}</p>
-                        </CardContent>
-                        <CardFooter className="flex justify-end">
-                          <motion.div
-                            whileTap={{ scale: 0.95 }}
-                            animate={
-                              doneMap[topic.id]
-                                ? {
-                                    scale: [1, 1.1, 1],
-                                    transition: { duration: 0.3 },
-                                  }
-                                : {}
-                            }
-                          >
-                            <Button
-                              onClick={() => handleUnComplete(topic.id)}
-                              variant="outline"
-                              size="sm"
-                              className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              未完了に戻す
-                            </Button>
-                          </motion.div>
-                        </CardFooter>
-                      </Card>
-                    </motion.div>
-                  </AnimatePresence>
+                  <AnimatedCompletedTopics
+                    key={index}
+                    topic={topic.topic}
+                    doneMap={doneMap}
+                    handleUnComplete={() => handleUnComplete(topic.id)}
+                  />
                 ))}
               </div>
             ) : (
