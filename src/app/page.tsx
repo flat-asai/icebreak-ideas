@@ -4,25 +4,22 @@
 import { useState, useEffect } from "react";
 import { generateTopics } from "@/lib/generate-topics";
 import {
-  Button,
-  Card,
-  CardContent,
-  CardFooter,
   Heading,
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
 } from "@/components/ui/";
-import { CheckCircle, MessageCircleMore, MessageCircleOff } from "lucide-react";
+import { MessageCircleMore, MessageCircleOff } from "lucide-react";
 import { fetchCompletedTopics, unCompleteTopic } from "@/lib/complete-topics";
 import { saveCompletedTopicAction } from "@/actions/save-completed-topic";
 import { CompletedTopic, IndustryValue } from "@/types";
-import { motion, AnimatePresence } from "framer-motion";
+
 import {
   AnimatedTopicCard,
   TopicGenerator,
 } from "@/app/_feature/topic-generator";
+import { AnimatedCompletedTopics } from "@/app/_feature/completed-topics";
 
 export default function Home() {
   const INDUSTRY_PRESETS = [
@@ -50,20 +47,21 @@ export default function Home() {
     { value: 5, label: "5つ" },
   ];
 
-  /* 業態 */
+  /* generatorForm: 入力するフォーム */
   const [industry, setIndustry] = useState(INDUSTRY_PRESETS[0].value);
   const [isCustom, setIsCustom] = useState(false);
-
-  /* お題の生成 */
   const [includeCasual, setIncludeCasual] = useState(false);
   const [count, setCount] = useState(1);
+
+  /* optionsState: トピックスの出力条件 */
+  const [excludeCompleted, setExcludeCompleted] = useState(false);
+
+  /* お題 */
   const [topics, setTopics] = useState<string[]>([]);
+  const [completedTopics, setCompletedTopics] = useState<CompletedTopic[]>([]);
 
   /* 完了 */
   const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
-
-  const [excludeCompleted, setExcludeCompleted] = useState(false);
-  const [completedTopics, setCompletedTopics] = useState<CompletedTopic[]>([]);
 
   /* 前回のお題 */
   const [previousTopics, setPreviousTopics] = useState<string[]>([]);
@@ -144,20 +142,26 @@ export default function Home() {
           <TabsContent value="generate">
             <div className="space-y-10">
               <TopicGenerator
-                industry={industry}
-                setIndustry={setIndustry}
-                isCustom={isCustom}
-                setIsCustom={setIsCustom}
-                includeCasual={includeCasual}
-                setIncludeCasual={setIncludeCasual}
-                count={count}
-                setCount={setCount}
-                excludeCompleted={excludeCompleted}
-                setExcludeCompleted={setExcludeCompleted}
+                generatorForm={{
+                  industry,
+                  setIndustry,
+                  isCustom,
+                  setIsCustom,
+                  includeCasual,
+                  setIncludeCasual,
+                  count,
+                  setCount,
+                }}
+                optionsState={{
+                  excludeCompleted,
+                  setExcludeCompleted,
+                }}
                 handleGenerate={handleGenerate}
                 loading={loading}
-                INDUSTRY_PRESETS={INDUSTRY_PRESETS}
-                COUNT_PRESETS={COUNT_PRESETS}
+                constants={{
+                  INDUSTRY_PRESETS,
+                  COUNT_PRESETS,
+                }}
               />
               <div className="space-y-8">
                 <Heading>こんなお題はいかが？</Heading>
@@ -166,10 +170,14 @@ export default function Home() {
                     {topics.map((topic, index) => (
                       <AnimatedTopicCard
                         key={index}
-                        topic={topic}
-                        doneMap={doneMap}
-                        openDialog={openDialog}
-                        setOpenDialog={setOpenDialog}
+                        topicState={{
+                          topic,
+                          doneMap,
+                        }}
+                        dialogState={{
+                          openDialog,
+                          setOpenDialog,
+                        }}
                         handleComplete={handleComplete}
                       />
                     ))}
@@ -188,50 +196,12 @@ export default function Home() {
               <div className="pt-6 space-y-8">
                 <Heading>これまでのお題一覧</Heading>
                 {completedTopics.map((topic, index) => (
-                  <AnimatePresence key={index}>
-                    <motion.div
-                      animate={
-                        doneMap[topic.id]
-                          ? {
-                              display: "none",
-                              transition: { delay: 0.5 },
-                            }
-                          : {}
-                      }
-                    >
-                      <Card
-                        key={index}
-                        className="overflow-hidden gap-y-4 pt-6"
-                      >
-                        <CardContent>
-                          <p className="text-base">{topic.topic}</p>
-                        </CardContent>
-                        <CardFooter className="flex justify-end">
-                          <motion.div
-                            whileTap={{ scale: 0.95 }}
-                            animate={
-                              doneMap[topic.id]
-                                ? {
-                                    scale: [1, 1.1, 1],
-                                    transition: { duration: 0.3 },
-                                  }
-                                : {}
-                            }
-                          >
-                            <Button
-                              onClick={() => handleUnComplete(topic.id)}
-                              variant="outline"
-                              size="sm"
-                              className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700 cursor-pointer"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              未完了に戻す
-                            </Button>
-                          </motion.div>
-                        </CardFooter>
-                      </Card>
-                    </motion.div>
-                  </AnimatePresence>
+                  <AnimatedCompletedTopics
+                    key={index}
+                    topic={topic}
+                    doneMap={doneMap}
+                    handleUnComplete={handleUnComplete}
+                  />
                 ))}
               </div>
             ) : (

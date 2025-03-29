@@ -1,31 +1,38 @@
+"use client";
+
 import { Card, CardContent, CardFooter } from "@/components/ui/";
 import { TopicCompleteModal } from "./TopicCompleteModal";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface TopicCardProps {
-  topic: string;
-  doneMap: Record<string, boolean>;
-  openDialog: string | null;
-  setOpenDialog: (open: string | null) => void;
+  topicState: {
+    topic: string;
+    doneMap: Record<string, boolean>;
+  };
+
+  dialogState: {
+    openDialog: string | null;
+    setOpenDialog: (open: string | null) => void;
+  };
+
   handleComplete: (topic: string) => void;
 }
 
 const TopicCard = ({
-  topic,
-  openDialog,
-  setOpenDialog,
+  topicState,
+  dialogState,
   handleComplete,
 }: TopicCardProps) => {
   return (
     <Card className="overflow-hidden gap-y-4 pt-6">
       <CardContent>
-        <p className="text-base">{topic}</p>
+        <p className="text-base">{topicState.topic}</p>
       </CardContent>
       <CardFooter className="flex justify-end">
         <TopicCompleteModal
-          topic={topic}
-          openDialog={openDialog}
-          setOpenDialog={setOpenDialog}
+          topic={topicState.topic}
+          openDialog={dialogState.openDialog}
+          setOpenDialog={dialogState.setOpenDialog}
           handleComplete={handleComplete}
         />
       </CardFooter>
@@ -34,23 +41,27 @@ const TopicCard = ({
 };
 
 export const AnimatedTopicCard = ({
-  topic,
-  doneMap,
-  openDialog,
-  setOpenDialog,
+  topicState,
+  dialogState,
   handleComplete,
 }: {
-  topic: string;
-  doneMap: Record<string, boolean>;
-  openDialog: string | null;
-  setOpenDialog: (open: string | null) => void;
+  topicState: {
+    topic: string;
+    doneMap: Record<string, boolean>;
+  };
+
+  dialogState: {
+    openDialog: string | null;
+    setOpenDialog: (open: string | null) => void;
+  };
+
   handleComplete: (topic: string) => void;
 }) => {
   return (
     <AnimatePresence>
       <motion.div
         animate={
-          doneMap[topic]
+          topicState.doneMap[topicState.topic]
             ? {
                 display: "none",
               }
@@ -58,10 +69,8 @@ export const AnimatedTopicCard = ({
         }
       >
         <TopicCard
-          topic={topic}
-          doneMap={doneMap}
-          openDialog={openDialog}
-          setOpenDialog={setOpenDialog}
+          topicState={topicState}
+          dialogState={dialogState}
           handleComplete={handleComplete}
         />
       </motion.div>
